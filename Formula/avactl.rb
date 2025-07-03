@@ -1,10 +1,12 @@
 class Avactl < Formula
   desc "Avalara CLI Tool"
   homepage "https://avalara.com"
-  # Point at your tap’s own GitHub archive as a dummy download
-  url "https://github.com/ava-raas-tools/homebrew-tools/archive/refs/heads/main.tar.gz"
-  sha256 :no_check
   version "latest"
+
+  stable do
+    url "https://github.com/ava-raas-tools/homebrew-tools/archive/refs/heads/main.tar.gz"
+    sha256 :no_check
+  end
 
   def install
     require "open3"
