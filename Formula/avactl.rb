@@ -1,7 +1,7 @@
 class Avactl < Formula
   desc "Avalara CLI Tool"
   homepage "https://avalara.com"
-  version "latest"
+  version "0.1.0"
 
   stable do
     url "https://github.com/ava-raas-tools/homebrew-tools/archive/refs/heads/main.tar.gz"
