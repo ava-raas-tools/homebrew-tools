@@ -14,30 +14,28 @@ class Avactl < Formula
     require "json"
 
     arch = Hardware::CPU.arm? ? "arm64" : "amd64"
-    base = "https://artifacts.platform.avalara.io/artifactory"
+    base_artifactory_url = "https://artifacts.platform.avalara.io/artifactory"
 
-    # 1) List the directory, filtering out folders, sorted by lastModified
-    folder_url = "#{base}/api/storage/phoenix-generic-local/avactl/#{arch}/darwin/?lastModified&listFolders=0"
-    ohai "Fetching avactl folder metadata…"
-    list = JSON.parse(Net::HTTP.get(URI(folder_url)))
-    children = list.fetch("children")
-    odie "No avactl binaries found!" if children.empty?
+    # 1) Fetch metadata for the latest binary
+    meta_url = "#{base_artifactory_url}/api/storage/phoenix-generic-local/avactl/#{arch}/darwin/?lastModified"
+    ohai "Fetching artifact metadata…"
+    metadata = JSON.parse(Net::HTTP.get(URI(meta_url)))
 
-    # 2) Take the first child (most recently modified) URI
-    file_uri = children.first.fetch("uri")
-
-    # 3) Fetch that file's metadata to get the downloadUri
-    file_meta_url = "#{base}/api/storage#{file_uri}"
-    ohai "Fetching avactl file metadata…"
-    file_meta = JSON.parse(Net::HTTP.get(URI(file_meta_url)))
+    # 2) Use the full URI from metadata to fetch file metadata
+    file_uri = metadata.fetch("uri")
+    ohai "Fetching file metadata…"
+    file_meta = JSON.parse(Net::HTTP.get(URI(file_uri)))
     download_url = file_meta.fetch("downloadUri")
+    odie "downloadUri missing!" if download_url.to_s.empty?
 
-    # 4) Download, extract, install
+    # 3) Download and extract the binary
     tmp = buildpath/"tmp"
     tmp.mkpath
     ohai "Downloading avactl from #{download_url}"
     system "curl", "-sL", download_url, "-o", tmp/"avactl.tar.gz"
     system "tar",  "-xzf",  tmp/"avactl.tar.gz",  "-C", tmp
+
+    # 4) Install and remove quarantine attribute
     bin.install tmp/"avactl"
     system "xattr", "-dr", "com.apple.quarantine", bin/"avactl"
   end
