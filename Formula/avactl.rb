@@ -14,20 +14,29 @@ class Avactl < Formula
     require "json"
 
     arch = Hardware::CPU.arm? ? "arm64" : "amd64"
-    base_url = "https://artifacts.platform.avalara.io/artifactory"
-    # 1) list folder metadata (sorted by lastModified by default)
-    meta_url = "#{base_url}/api/storage/phoenix-generic-local/avactl/#{arch}/darwin/?lastModified"
-    ohai "Fetching artifact metadata…"
-    meta = JSON.parse(Net::HTTP.get(URI(meta_url)))
-    folder_uri = meta.fetch("uri")
+    base = "https://artifacts.platform.avalara.io/artifactory"
 
-    # 2) fetch that folder’s metadata to get the downloadUri
-    file_meta = JSON.parse(Net::HTTP.get(URI(base_url + folder_uri)))
+    # 1) List the folder to get the file URIs
+    folder_url = "#{base}/api/storage/phoenix-generic-local/avactl/#{arch}/darwin/"
+    ohai "Fetching avactl folder metadata…"
+    list = JSON.parse(Net::HTTP.get(URI(folder_url)))
+    children = list.fetch("children")
+    odie "No avactl binaries found!" if children.empty?
+
+    # 2) Take the first (newest) child’s URI
+    child_uri = children.first.fetch("uri")
+
+    # 3) Fetch that file’s metadata to get its downloadUri
+    file_meta_url = "#{base}/api/storage#{child_uri}"
+    ohai "Fetching avactl file metadata…"
+    file_meta = JSON.parse(Net::HTTP.get(URI(file_meta_url)))
     download_url = file_meta.fetch("downloadUri")
+    odie "downloadUri missing!" if download_url.to_s.empty?
 
-    # 3) download/extract/install
+    # 4) Download, extract, install
     tmp = buildpath/"tmp"
     tmp.mkpath
+    ohai "Downloading avactl from #{download_url}"
     system "curl", "-sL", download_url, "-o", tmp/"avactl.tar.gz"
     system "tar",  "-xzf",  tmp/"avactl.tar.gz",  "-C", tmp
     bin.install tmp/"avactl"
@@ -35,6 +44,6 @@ class Avactl < Formula
   end
 
   test do
-    assert_match "0.1.0", shell_output("#{bin}/avactl --version")
+    assert_match version.to_s, shell_output("#{bin}/avactl --version")
   end
 end
