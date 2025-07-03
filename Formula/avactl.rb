@@ -16,22 +16,21 @@ class Avactl < Formula
     arch = Hardware::CPU.arm? ? "arm64" : "amd64"
     base = "https://artifacts.platform.avalara.io/artifactory"
 
-    # 1) List the folder to get the file URIs
-    folder_url = "#{base}/api/storage/phoenix-generic-local/avactl/#{arch}/darwin/"
+    # 1) List the directory, filtering out folders, sorted by lastModified
+    folder_url = "#{base}/api/storage/phoenix-generic-local/avactl/#{arch}/darwin/?lastModified&listFolders=0"
     ohai "Fetching avactl folder metadata…"
     list = JSON.parse(Net::HTTP.get(URI(folder_url)))
     children = list.fetch("children")
     odie "No avactl binaries found!" if children.empty?
 
-    # 2) Take the first (newest) child’s URI
-    child_uri = children.first.fetch("uri")
+    # 2) Take the first child (most recently modified) URI
+    file_uri = children.first.fetch("uri")
 
-    # 3) Fetch that file’s metadata to get its downloadUri
-    file_meta_url = "#{base}/api/storage#{child_uri}"
+    # 3) Fetch that file's metadata to get the downloadUri
+    file_meta_url = "#{base}/api/storage#{file_uri}"
     ohai "Fetching avactl file metadata…"
     file_meta = JSON.parse(Net::HTTP.get(URI(file_meta_url)))
     download_url = file_meta.fetch("downloadUri")
-    odie "downloadUri missing!" if download_url.to_s.empty?
 
     # 4) Download, extract, install
     tmp = buildpath/"tmp"
