@@ -14,28 +14,27 @@ class Avactl < Formula
     require "json"
 
     arch = Hardware::CPU.arm? ? "arm64" : "amd64"
-    base = "https://artifacts.platform.avalara.io/artifactory"
-    # 1) List the dir, get the folder URI
-    metadata_url = "#{base}/api/storage/phoenix-generic-local/avactl/#{arch}/darwin/?lastModified"
+    base_url = "https://artifacts.platform.avalara.io/artifactory"
+    # 1) list folder metadata (sorted by lastModified by default)
+    meta_url = "#{base_url}/api/storage/phoenix-generic-local/avactl/#{arch}/darwin/?lastModified"
     ohai "Fetching artifact metadata…"
-    list = JSON.parse(Net::HTTP.get(URI(metadata_url)))
-    folder_uri = list.fetch("uri")
+    meta = JSON.parse(Net::HTTP.get(URI(meta_url)))
+    folder_uri = meta.fetch("uri")
 
-    # 2) Fetch that folder’s JSON to get the actual downloadUri
-    file_meta = JSON.parse(Net::HTTP.get(URI(base + folder_uri)))
+    # 2) fetch that folder’s metadata to get the downloadUri
+    file_meta = JSON.parse(Net::HTTP.get(URI(base_url + folder_uri)))
     download_url = file_meta.fetch("downloadUri")
 
-    # 3) Download, extract, install
+    # 3) download/extract/install
     tmp = buildpath/"tmp"
     tmp.mkpath
     system "curl", "-sL", download_url, "-o", tmp/"avactl.tar.gz"
-    system "tar",  "-xzf",  tmp/"avactl.tar.gz", "-C", tmp
+    system "tar",  "-xzf",  tmp/"avactl.tar.gz",  "-C", tmp
     bin.install tmp/"avactl"
     system "xattr", "-dr", "com.apple.quarantine", bin/"avactl"
   end
 
   test do
-    # The output should include "0.1.0" now
     assert_match "0.1.0", shell_output("#{bin}/avactl --version")
   end
 end
