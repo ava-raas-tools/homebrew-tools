@@ -5,7 +5,7 @@ class Avactl < Formula
 
   stable do
     url "https://github.com/ava-raas-tools/homebrew-tools/archive/refs/heads/main.tar.gz"
-    sha256 "46e11518a406eea9eb7455fcbd5bb98f5d38250f340c82fd59f05c243b7f264f"
+    sha256 "c90be3185116d9eb6861b5a783b3a3feafa7c07631b73ef90c1063929cbfb81d"
   end
 
   def install
